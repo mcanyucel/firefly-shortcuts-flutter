@@ -1,0 +1,2 @@
+-keep class androidx.work.** { *; }
+-keep class androidx.room.** { *; }
