@@ -58,6 +58,10 @@
       implementation("com.squareup.okhttp3:okhttp:4.12.0")
   }
 
+  configurations.all {
+      exclude(group = "com.google.android.play", module = "core")
+  }
+
   kotlin {
       compilerOptions {
           jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
