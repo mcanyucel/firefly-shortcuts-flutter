@@ -27,7 +27,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       await WidgetUpdateService.update(
         shortcutDao: ref.read(shortcutDaoProvider),
         settings: ref.read(settingsRepositoryProvider),
-        authManager: ref.read(authManagerProvider),
       );
     });
   }
@@ -200,7 +199,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       WidgetUpdateService.update(
           shortcutDao: ref.read(shortcutDaoProvider),
           settings: ref.read(settingsRepositoryProvider),
-          authManager: ref.read(authManagerProvider),
         );
     }
   }

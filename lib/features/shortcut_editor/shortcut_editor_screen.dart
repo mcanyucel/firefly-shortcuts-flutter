@@ -178,7 +178,6 @@ class _ShortcutEditorScreenState extends ConsumerState<ShortcutEditorScreen> {
       WidgetUpdateService.update(
         shortcutDao: ref.read(shortcutDaoProvider),
         settings: ref.read(settingsRepositoryProvider),
-        authManager: ref.read(authManagerProvider),
       );
 
       if (mounted) context.pop();

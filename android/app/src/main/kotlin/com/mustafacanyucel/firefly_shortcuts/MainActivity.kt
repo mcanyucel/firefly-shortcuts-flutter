@@ -12,19 +12,27 @@ class MainActivity : FlutterActivity() {
             flutterEngine.dartExecutor.binaryMessenger,
             "firefly_shortcuts/widget"
         ).setMethodCallHandler { call, result ->
-            if (call.method == "updateWidgetData") {
-                val prefs = getSharedPreferences(
-                    ShortcutWidgetProvider.PREFS_NAME, Context.MODE_PRIVATE
-                )
-                prefs.edit()
-                    .putString("shortcuts", call.argument("shortcuts") ?: "[]")
-                    .putString("server_url", call.argument("server_url") ?: "")
-                    .putString("access_token", call.argument("access_token") ?: "")
-                    .apply()
-                ShortcutWidgetProvider.updateAllWidgets(this)
-                result.success(null)
-            } else {
-                result.notImplemented()
+            val prefs = getSharedPreferences(
+                ShortcutWidgetProvider.PREFS_NAME, Context.MODE_PRIVATE
+            )
+            when (call.method) {
+                "updateWidgetData" -> {
+                    prefs.edit()
+                        .putString("shortcuts", call.argument("shortcuts") ?: "[]")
+                        .putString("server_url", call.argument("server_url") ?: "")
+                        .apply()
+                    ShortcutWidgetProvider.updateAllWidgets(this)
+                    result.success(null)
+                }
+                "setAccessToken" -> {
+                    val token = call.argument<String>("access_token")
+                    prefs.edit().apply {
+                        if (token.isNullOrEmpty()) remove("access_token")
+                        else putString("access_token", token)
+                    }.commit()
+                    result.success(null)
+                }
+                else -> result.notImplemented()
             }
         }
     }

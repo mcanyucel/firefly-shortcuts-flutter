@@ -1,6 +1,7 @@
 import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../settings/settings_repository.dart';
+import '../widget/widget_update_service.dart';
 import 'auth_state.dart';
 
 class AuthManager {
@@ -29,6 +30,9 @@ class AuthManager {
         accessTokenExpiry: expiryStr != null ? DateTime.parse(expiryStr) : null,
       );
     }
+    // Also repairs a widget copy left behind by versions that did not clear
+    // it on logout.
+    await WidgetUpdateService.setAccessToken(accessToken);
   }
 
   Future<bool> login() async {
@@ -107,6 +111,7 @@ class AuthManager {
     await _secureStorage.delete(key: _keyExpiry);
     await _secureStorage.write(key: _keyAccessToken, value: pat);
     _state = AuthState(accessToken: pat);
+    await WidgetUpdateService.setAccessToken(pat);
   }
 
   Future<void> logout() async {
@@ -114,6 +119,7 @@ class AuthManager {
     await _secureStorage.delete(key: _keyRefreshToken);
     await _secureStorage.delete(key: _keyExpiry);
     _state = const AuthState.unauthenticated();
+    await WidgetUpdateService.setAccessToken(null);
   }
 
   Future<void> _persistAndUpdate({
@@ -138,5 +144,6 @@ class AuthManager {
       refreshToken: refreshToken ?? _state.refreshToken,
       accessTokenExpiry: expiry ?? _state.accessTokenExpiry,
     );
+    await WidgetUpdateService.setAccessToken(_state.accessToken);
   }
 }

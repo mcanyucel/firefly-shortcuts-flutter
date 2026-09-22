@@ -106,7 +106,6 @@
       await WidgetUpdateService.update(
         shortcutDao: ref.read(shortcutDaoProvider),
         settings: ref.read(settingsRepositoryProvider),
-        authManager: ref.read(authManagerProvider),
       );
       
       state = state.copyWith(isSyncing: false, lastSyncTime: now);

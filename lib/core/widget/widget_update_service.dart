@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:flutter/services.dart';
-import '../auth/auth_manager.dart';
 import '../database/daos/shortcut_dao.dart';
 import '../settings/settings_repository.dart';
 
@@ -10,7 +9,6 @@ class WidgetUpdateService {
   static Future<void> update({
     required ShortcutDao shortcutDao,
     required SettingsRepository settings,
-    required AuthManager authManager,
   }) async {
     try {
       final details = await shortcutDao.watchAllWithDetails().first;
@@ -36,8 +34,15 @@ class WidgetUpdateService {
       await _channel.invokeMethod('updateWidgetData', {
         'shortcuts': shortcutsJson,
         'server_url': await settings.getServerUrl() ?? '',
-        'access_token': authManager.state.accessToken ?? '',
       });
+    } catch (_) {}
+  }
+
+  /// Mirrors the access token into the native storage the widget worker
+  /// reads. Pass null to remove it.
+  static Future<void> setAccessToken(String? token) async {
+    try {
+      await _channel.invokeMethod('setAccessToken', {'access_token': token});
     } catch (_) {}
   }
 }
