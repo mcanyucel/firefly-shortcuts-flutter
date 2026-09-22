@@ -18,7 +18,6 @@ import android.content.Context
           val id: Int,
           val name: String,
           val detail: String,
-          val jsonData: String,
       )
 
       private var items = listOf<ShortcutItem>()
@@ -38,7 +37,6 @@ import android.content.Context
                   detail = "${obj.optString("fromAccountName")} → " +
                            "${obj.optString("toAccountName")}  •  " +
                            obj.optString("amount"),
-                  jsonData = obj.toString(),
               )
           }
       }
@@ -64,8 +62,7 @@ import android.content.Context
               setOnClickFillInIntent(
                   R.id.widget_execute_button,
                   Intent().apply {
-                      putExtra(ShortcutWidgetProvider.EXTRA_SHORTCUT_ID, item.id)
-                      putExtra(ShortcutWidgetProvider.EXTRA_SHORTCUT_DATA, item.jsonData)
+                      putExtra(ShortcutExecuteReceiver.EXTRA_SHORTCUT_ID, item.id)
                   }
               )
           }

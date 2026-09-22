@@ -21,13 +21,10 @@ import android.content.Context
 
       companion object {
           const val KEY_SHORTCUT_ID = "shortcut_id"
-          const val KEY_SHORTCUT_DATA = "shortcut_data"
       }
 
       override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
           val shortcutId = inputData.getInt(KEY_SHORTCUT_ID, -1)
-          val shortcutData = inputData.getString(KEY_SHORTCUT_DATA)
-              ?: return@withContext Result.failure()
           if (shortcutId == -1) return@withContext Result.failure()
 
           val prefs = context.getSharedPreferences(
@@ -35,14 +32,17 @@ import android.content.Context
           )
           val serverUrl = prefs.getString("server_url", "") ?: ""
           val token = prefs.getString("access_token", "") ?: ""
+          // Transaction fields come only from app-private storage, never from
+          // the triggering intent.
+          val shortcut = findShortcut(prefs.getString("shortcuts", "[]") ?: "[]", shortcutId)
 
-          if (serverUrl.isEmpty() || token.isEmpty()) {
+          if (serverUrl.isEmpty() || token.isEmpty() || shortcut == null) {
               setState(shortcutId, "error")
+              scheduleReset(shortcutId)
               return@withContext Result.failure()
           }
 
           try {
-              val shortcut = JSONObject(shortcutData)
               val body = buildBody(shortcut)
 
               val response = OkHttpClient().newCall(
@@ -63,6 +63,13 @@ import android.content.Context
               scheduleReset(shortcutId)
               Result.failure()
           }
+      }
+
+      private fun findShortcut(json: String, id: Int): JSONObject? {
+          val array = try { JSONArray(json) } catch (_: Exception) { return null }
+          return (0 until array.length())
+              .map { array.getJSONObject(it) }
+              .firstOrNull { it.optInt("id", -1) == id }
       }
 
       private fun buildBody(s: JSONObject): String {

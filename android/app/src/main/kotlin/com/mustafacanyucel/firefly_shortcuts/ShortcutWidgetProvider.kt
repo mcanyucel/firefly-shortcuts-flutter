@@ -9,16 +9,10 @@ import android.appwidget.AppWidgetManager
   import android.os.Build
   import android.app.PendingIntent
   import android.widget.RemoteViews
-  import androidx.work.OneTimeWorkRequestBuilder
-  import androidx.work.WorkManager
-  import androidx.work.workDataOf
 
   class ShortcutWidgetProvider : AppWidgetProvider() {
 
       companion object {
-          const val ACTION_EXECUTE = "com.mustafacanyucel.firefly_shortcuts.ACTION_EXECUTE_SHORTCUT"
-          const val EXTRA_SHORTCUT_ID = "shortcut_id"
-          const val EXTRA_SHORTCUT_DATA = "shortcut_data"
           const val PREFS_NAME = "HomeWidgetPreferences"
           const val KEY_STATE_PREFIX = "exec_state_"
 
@@ -40,31 +34,6 @@ import android.appwidget.AppWidgetManager
           for (id in appWidgetIds) setupWidget(context, appWidgetManager, id)
       }
 
-      override fun onReceive(context: Context, intent: Intent) {
-          super.onReceive(context, intent)
-          if (intent.action != ACTION_EXECUTE) return
-
-          val shortcutId = intent.getIntExtra(EXTRA_SHORTCUT_ID, -1)
-          val shortcutData = intent.getStringExtra(EXTRA_SHORTCUT_DATA) ?: return
-          if (shortcutId == -1) return
-
-          val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-          val currentState = prefs.getString("$KEY_STATE_PREFIX$shortcutId", "idle")
-          if (currentState != "idle") return
-
-          prefs.edit().putString("$KEY_STATE_PREFIX$shortcutId", "executing").apply()
-          updateAllWidgets(context)
-
-          WorkManager.getInstance(context).enqueue(
-              OneTimeWorkRequestBuilder<ShortcutExecuteWorker>()
-                  .setInputData(workDataOf(
-                      ShortcutExecuteWorker.KEY_SHORTCUT_ID to shortcutId,
-                      ShortcutExecuteWorker.KEY_SHORTCUT_DATA to shortcutData,
-                  ))
-                  .build()
-          )
-      }
-
       private fun setupWidget(
           context: Context,
           appWidgetManager: AppWidgetManager,
@@ -81,9 +50,7 @@ import android.appwidget.AppWidgetManager
 
           val templateIntent = PendingIntent.getBroadcast(
               context, 0,
-              Intent(context, ShortcutWidgetProvider::class.java).apply {
-                  action = ACTION_EXECUTE
-              },
+              Intent(context, ShortcutExecuteReceiver::class.java),
               flags
           )
 

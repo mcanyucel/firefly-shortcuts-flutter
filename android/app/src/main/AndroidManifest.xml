@@ -9,12 +9,14 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.mustafacanyucel.firefly_shortcuts.ACTION_EXECUTE_SHORTCUT" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/shortcut_widget_info" />
         </receiver>
+        <receiver
+            android:name=".ShortcutExecuteReceiver"
+            android:exported="false" />
         <service
             android:name=".ShortcutListWidgetService"
             android:exported="false"
