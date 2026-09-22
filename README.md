@@ -92,6 +92,13 @@ For building from source, see [SETUP.md](./SETUP.md).
   The widget requires the app to have been opened at least once after the last sync so that the data is written to the widget's storage. If the widget shows "No shortcuts yet", open the app
   and perform a sync.
 
+  ### Widget Behavior
+
+  - A tap is sent in the background via Android WorkManager. If the request fails because of the network or a server error, it is retried twice before the button shows the failure. Every retry sends the same request, and Firefly III rejects it if the transaction already exists, so a retry never creates a second transaction.
+  - If the button stays on the hourglass for more than five minutes, the next tap starts over.
+  - If the widget shows "Signed out", the token has expired or was revoked. Tap the message to open the app and sign in again.
+  - Android can delay background work to save battery (Doze, or aggressive battery optimization on some devices). This has not been seen in practice, but if a tap sits on the hourglass for a long time, exempting the app from battery optimization in Android settings should help.
+
   ---
 
   ## Reverse Proxy Notes

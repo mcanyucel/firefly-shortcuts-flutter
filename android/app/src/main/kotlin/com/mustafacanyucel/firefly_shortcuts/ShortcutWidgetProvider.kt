@@ -17,6 +17,7 @@ import android.appwidget.AppWidgetManager
       companion object {
           const val PREFS_NAME = "HomeWidgetPreferences"
           const val KEY_STATE_PREFIX = "exec_state_"
+          const val KEY_STARTED_PREFIX = "exec_started_"
           const val KEY_TOKEN_EXPIRY = "access_token_expiry"
           const val KEY_NEEDS_REAUTH = "needs_reauth"
 

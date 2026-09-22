@@ -1,3 +1,4 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -123,7 +124,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               transactions: [
                 TransactionItem(
                   type: item.shortcut.transactionType.apiValue,
-                  date: DateTime.now().toIso8601String(),
+                  date: TransactionItem.formatDate(DateTime.now()),
                   amount: item.shortcut.amount,
                   description: item.shortcut.description ?? item.shortcut.name,
                   sourceId: item.fromAccount.id,
@@ -166,11 +167,34 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('Failed: $e')));
+        ).showSnackBar(SnackBar(content: Text(_failureMessage(e))));
       }
     } finally {
       if (mounted) setState(() => _executing.remove(id));
     }
+  }
+
+  // After a send or receive timeout, or a dropped connection, the server may
+  // already have stored the transaction. A retry would carry a new date and
+  // not be caught as a duplicate, so say so rather than just "failed".
+  String _failureMessage(Object e) {
+    if (e is DioException) {
+      switch (e.type) {
+        case DioExceptionType.sendTimeout:
+        case DioExceptionType.receiveTimeout:
+        case DioExceptionType.unknown:
+          return 'No response from Firefly. The transaction may have been '
+              'created; check Firefly before trying again.';
+        case DioExceptionType.badResponse:
+          final data = e.response?.data;
+          final message = data is Map ? data['message'] : null;
+          if (message is String && message.isNotEmpty) {
+            return 'Failed: $message';
+          }
+        default:
+      }
+    }
+    return 'Failed: $e';
   }
 
   Future<void> _confirmDelete(ShortcutDetail item) async {

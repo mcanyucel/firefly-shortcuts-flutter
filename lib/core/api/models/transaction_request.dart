@@ -2,7 +2,10 @@ class TransactionRequest {
   final List<TransactionItem> transactions;
   const TransactionRequest({required this.transactions});
 
+  // Firefly rejects a request identical to an existing transaction, so a
+  // resubmitted request cannot create a second one.
   Map<String, dynamic> toJson() => {
+    'error_if_duplicate_hash': true,
     'transactions': transactions.map((t) => t.toJson()).toList(),
   };
 }
@@ -47,6 +50,18 @@ class TransactionItem {
     this.piggyBankName,
     this.tags,
   });
+
+  /// ISO 8601 with the UTC offset, to the second. Without an offset Firefly
+  /// reads the time in the server's timezone.
+  static String formatDate(DateTime time) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    final offset = time.timeZoneOffset;
+    final sign = offset.isNegative ? '-' : '+';
+    final minutes = offset.inMinutes.abs();
+    return '${time.year.toString().padLeft(4, '0')}-${two(time.month)}-'
+        '${two(time.day)}T${two(time.hour)}:${two(time.minute)}:'
+        '${two(time.second)}$sign${two(minutes ~/ 60)}:${two(minutes % 60)}';
+  }
 
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{
