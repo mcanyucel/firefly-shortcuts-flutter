@@ -1,0 +1,8 @@
+Security and robustness fixes:
+- Other apps can no longer trigger widget transactions
+- Logging out also signs the widget out
+- Switching server or account clears the local shortcuts
+- The widget says when you need to sign in again; OAuth tokens are refreshed early
+- The widget's token is encrypted, and credentials are excluded from backups
+- Failed widget requests are retried without creating duplicates
+- Transaction times include the phone's timezone
