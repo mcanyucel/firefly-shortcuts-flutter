@@ -31,14 +31,14 @@ import android.content.Context
               ShortcutWidgetProvider.PREFS_NAME, Context.MODE_PRIVATE
           )
           val serverUrl = prefs.getString("server_url", "") ?: ""
-          val token = prefs.getString("access_token", "") ?: ""
+          val token = WidgetToken.read(prefs) ?: ""
           // Transaction fields come only from app-private storage, never from
           // the triggering intent.
           val shortcut = findShortcut(prefs.getString("shortcuts", "[]") ?: "[]", shortcutId)
 
           // Covers a missing or expired token, and a 401 seen earlier: the
           // request would fail, and only the app can get a new token.
-          if (serverUrl.isEmpty() || shortcut == null ||
+          if (serverUrl.isEmpty() || shortcut == null || token.isEmpty() ||
               ShortcutWidgetProvider.needsReauth(prefs)) {
               setState(shortcutId, "error")
               scheduleReset(shortcutId)

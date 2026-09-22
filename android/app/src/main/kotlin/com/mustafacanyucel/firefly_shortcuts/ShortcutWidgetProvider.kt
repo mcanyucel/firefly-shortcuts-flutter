@@ -29,7 +29,7 @@ import android.appwidget.AppWidgetManager
           // well lets the banner show once the token expires, before a tap.
           fun needsReauth(prefs: SharedPreferences): Boolean =
               prefs.getBoolean(KEY_NEEDS_REAUTH, false) ||
-                  prefs.getString("access_token", "").isNullOrEmpty() ||
+                  !WidgetToken.isStored(prefs) ||
                   isTokenExpired(prefs)
 
           fun updateAllWidgets(context: Context) {

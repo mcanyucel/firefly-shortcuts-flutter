@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 and lower. Keep in sync with data_extraction_rules.xml.
+     Credentials stay on the device: flutter_secure_storage's values are
+     encrypted with Keystore keys that are never backed up, so a restored
+     copy cannot be decrypted, and the widget prefs hold a token. The
+     shortcut database and data_owner.json are backed up together. -->
+<full-backup-content>
+    <exclude domain="sharedpref" path="FlutterSecureStorage.xml" />
+    <exclude domain="sharedpref" path="FlutterSecureKeyStorage.xml" />
+    <exclude domain="sharedpref" path="HomeWidgetPreferences.xml" />
+</full-backup-content>

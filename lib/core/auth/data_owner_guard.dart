@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import '../../features/sync/sync_notifier.dart';
 import '../api/firefly_api_service.dart';
 import '../database/app_database.dart';
@@ -8,18 +12,19 @@ import '../settings/settings_repository.dart';
 /// from. Shortcuts store raw Firefly IDs, which mean something else on
 /// another server or for another user, so the data is wiped when the owner
 /// changes.
+///
+/// The owner is kept in a file next to the database rather than in secure
+/// storage, so Android backup restores the two together. Secure storage is
+/// excluded from backup, as its Keystore keys cannot be restored.
 class DataOwnerGuard {
   final FireflyApiService _api;
   final SettingsRepository _settings;
   final AppDatabase _db;
   final FlutterSecureStorage _storage;
 
-  static const _keyOwnerServer = 'data_owner_server';
-  static const _keyOwnerUser = 'data_owner_user';
-
   DataOwnerGuard(this._api, this._settings, this._db, this._storage);
 
-  Future<String?> ownerServerUrl() => _storage.read(key: _keyOwnerServer);
+  Future<String?> ownerServerUrl() async => (await _readOwner()).server;
 
   /// Call after a successful login. Records the logged-in server and user as
   /// the owner and wipes local data first if they differ from the previous
@@ -28,8 +33,7 @@ class DataOwnerGuard {
   Future<bool> claim() async {
     final server = await _settings.getServerUrl() ?? '';
     final user = await _api.getCurrentUserId();
-    final ownerServer = await _storage.read(key: _keyOwnerServer);
-    final ownerUser = await _storage.read(key: _keyOwnerUser);
+    final (server: ownerServer, user: ownerUser) = await _readOwner();
 
     // A null owner user with a matching server is a 1.0.2 install adopted by
     // adoptLegacyOwner before its user ID could be fetched.
@@ -40,8 +44,7 @@ class DataOwnerGuard {
       await _storage.delete(key: SyncNotifier.keyLastSync);
     }
 
-    await _storage.write(key: _keyOwnerServer, value: server);
-    await _storage.write(key: _keyOwnerUser, value: user);
+    await _writeOwner(server, user);
     return changed;
   }
 
@@ -53,17 +56,38 @@ class DataOwnerGuard {
     final server = await _settings.getServerUrl();
     if (server == null || server.isEmpty) return;
 
-    var ownerServer = await _storage.read(key: _keyOwnerServer);
+    var (server: ownerServer, user: ownerUser) = await _readOwner();
     if (ownerServer == null) {
-      await _storage.write(key: _keyOwnerServer, value: server);
+      await _writeOwner(server, null);
       ownerServer = server;
     }
 
-    if (!authenticated || ownerServer != server) return;
-    if (await _storage.read(key: _keyOwnerUser) != null) return;
+    if (!authenticated || ownerServer != server || ownerUser != null) return;
     try {
-      final user = await _api.getCurrentUserId();
-      await _storage.write(key: _keyOwnerUser, value: user);
+      await _writeOwner(server, await _api.getCurrentUserId());
     } catch (_) {}
+  }
+
+  Future<File> _ownerFile() async => File(
+    p.join((await getApplicationDocumentsDirectory()).path, 'data_owner.json'),
+  );
+
+  Future<({String? server, String? user})> _readOwner() async {
+    try {
+      final file = await _ownerFile();
+      if (!await file.exists()) return (server: null, user: null);
+      final json = jsonDecode(await file.readAsString()) as Map<String, dynamic>;
+      return (server: json['server'] as String?, user: json['user'] as String?);
+    } catch (_) {
+      return (server: null, user: null);
+    }
+  }
+
+  Future<void> _writeOwner(String server, String? user) async {
+    final file = await _ownerFile();
+    await file.writeAsString(
+      jsonEncode({'server': server, 'user': user}),
+      flush: true,
+    );
   }
 }

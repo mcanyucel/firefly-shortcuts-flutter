@@ -28,8 +28,7 @@ class MainActivity : FlutterActivity() {
                     val token = call.argument<String>("access_token")
                     val expiry = call.argument<Number>("expiry")?.toLong()
                     prefs.edit().apply {
-                        if (token.isNullOrEmpty()) remove("access_token")
-                        else putString("access_token", token)
+                        WidgetToken.write(this, token)
                         if (expiry == null) remove(ShortcutWidgetProvider.KEY_TOKEN_EXPIRY)
                         else putLong(ShortcutWidgetProvider.KEY_TOKEN_EXPIRY, expiry)
                         remove(ShortcutWidgetProvider.KEY_NEEDS_REAUTH)
