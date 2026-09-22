@@ -21,6 +21,9 @@ class AuthState {
     return _decodeJwtExpiry(accessToken!);
   }
 
+  /// When the current access token stops working, if known.
+  DateTime? get tokenExpiry => isOAuth ? accessTokenExpiry : patExpiry;
+
   bool get isAccessTokenExpired {
     if (isOAuth) {
       return accessTokenExpiry != null &&

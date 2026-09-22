@@ -38,11 +38,14 @@ class WidgetUpdateService {
     } catch (_) {}
   }
 
-  /// Mirrors the access token into the native storage the widget worker
-  /// reads. Pass null to remove it.
-  static Future<void> setAccessToken(String? token) async {
+  /// Mirrors the access token and its expiry into the native storage the
+  /// widget worker reads. Pass a null token to remove it.
+  static Future<void> setAccessToken(String? token, DateTime? expiry) async {
     try {
-      await _channel.invokeMethod('setAccessToken', {'access_token': token});
+      await _channel.invokeMethod('setAccessToken', {
+        'access_token': token,
+        'expiry': expiry?.millisecondsSinceEpoch,
+      });
     } catch (_) {}
   }
 }

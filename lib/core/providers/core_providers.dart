@@ -59,4 +59,5 @@ Future<void> appInit(Ref ref) async {
       authenticated: authManager.state.isAuthenticated,
     ),
   );
+  unawaited(authManager.refreshIfExpiringSoon());
 }

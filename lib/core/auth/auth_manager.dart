@@ -13,8 +13,14 @@ class AuthManager {
   static const _keyRefreshToken = 'refresh_token';
   static const _keyExpiry = 'token_expiry';
 
+  // The widget only holds an access token and cannot refresh it, so refresh
+  // well before expiry whenever the app runs.
+  static const _refreshAhead = Duration(days: 30);
+
   AuthState _state = const AuthState.unauthenticated();
   AuthState get state => _state;
+
+  Future<bool>? _refreshing;
 
   AuthManager(this._appAuth, this._secureStorage, this._settings);
 
@@ -32,7 +38,14 @@ class AuthManager {
     }
     // Also repairs a widget copy left behind by versions that did not clear
     // it on logout.
-    await WidgetUpdateService.setAccessToken(accessToken);
+    await _syncWidgetToken();
+  }
+
+  Future<void> refreshIfExpiringSoon() async {
+    final expiry = _state.accessTokenExpiry;
+    if (!_state.isOAuth || expiry == null) return;
+    if (expiry.difference(DateTime.now()) > _refreshAhead) return;
+    await refreshAccessToken();
   }
 
   Future<bool> login() async {
@@ -68,7 +81,12 @@ class AuthManager {
     }
   }
 
-  Future<bool> refreshAccessToken() async {
+  /// Concurrent callers share one request: Firefly revokes a refresh token
+  /// once used, so a second parallel refresh would fail.
+  Future<bool> refreshAccessToken() =>
+      _refreshing ??= _refresh().whenComplete(() => _refreshing = null);
+
+  Future<bool> _refresh() async {
     final refreshToken = _state.refreshToken;
     if (refreshToken == null) return false;
 
@@ -111,7 +129,7 @@ class AuthManager {
     await _secureStorage.delete(key: _keyExpiry);
     await _secureStorage.write(key: _keyAccessToken, value: pat);
     _state = AuthState(accessToken: pat);
-    await WidgetUpdateService.setAccessToken(pat);
+    await _syncWidgetToken();
   }
 
   Future<void> logout() async {
@@ -119,7 +137,7 @@ class AuthManager {
     await _secureStorage.delete(key: _keyRefreshToken);
     await _secureStorage.delete(key: _keyExpiry);
     _state = const AuthState.unauthenticated();
-    await WidgetUpdateService.setAccessToken(null);
+    await _syncWidgetToken();
   }
 
   Future<void> _persistAndUpdate({
@@ -144,6 +162,11 @@ class AuthManager {
       refreshToken: refreshToken ?? _state.refreshToken,
       accessTokenExpiry: expiry ?? _state.accessTokenExpiry,
     );
-    await WidgetUpdateService.setAccessToken(_state.accessToken);
+    await _syncWidgetToken();
   }
+
+  Future<void> _syncWidgetToken() => WidgetUpdateService.setAccessToken(
+    _state.accessToken,
+    _state.tokenExpiry,
+  );
 }

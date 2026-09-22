@@ -15,6 +15,16 @@
         android:textColor="#FFFFFF"
         android:paddingBottom="6dp" />
 
+    <TextView
+        android:id="@+id/widget_reauth_banner"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Signed out. Tap to open the app and sign in."
+        android:textColor="#FFB74D"
+        android:textSize="12sp"
+        android:paddingBottom="6dp"
+        android:visibility="gone" />
+
     <ListView
         android:id="@+id/widget_list_view"
         android:layout_width="match_parent"

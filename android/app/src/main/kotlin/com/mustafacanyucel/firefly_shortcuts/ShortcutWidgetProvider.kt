@@ -5,6 +5,8 @@ import android.appwidget.AppWidgetManager
   import android.content.ComponentName
   import android.content.Context
   import android.content.Intent
+  import android.content.SharedPreferences
+  import android.view.View
   import android.net.Uri
   import android.os.Build
   import android.app.PendingIntent
@@ -15,6 +17,20 @@ import android.appwidget.AppWidgetManager
       companion object {
           const val PREFS_NAME = "HomeWidgetPreferences"
           const val KEY_STATE_PREFIX = "exec_state_"
+          const val KEY_TOKEN_EXPIRY = "access_token_expiry"
+          const val KEY_NEEDS_REAUTH = "needs_reauth"
+
+          fun isTokenExpired(prefs: SharedPreferences): Boolean {
+              val expiry = prefs.getLong(KEY_TOKEN_EXPIRY, 0L)
+              return expiry > 0 && System.currentTimeMillis() >= expiry
+          }
+
+          // The flag is set by the worker after a 401. Checking the time as
+          // well lets the banner show once the token expires, before a tap.
+          fun needsReauth(prefs: SharedPreferences): Boolean =
+              prefs.getBoolean(KEY_NEEDS_REAUTH, false) ||
+                  prefs.getString("access_token", "").isNullOrEmpty() ||
+                  isTokenExpired(prefs)
 
           fun updateAllWidgets(context: Context) {
               val manager = AppWidgetManager.getInstance(context)
@@ -54,10 +70,22 @@ import android.appwidget.AppWidgetManager
               flags
           )
 
+          val openApp = PendingIntent.getActivity(
+              context, 0,
+              Intent(context, MainActivity::class.java),
+              PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+          )
+          val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
           RemoteViews(context.packageName, R.layout.shortcut_widget).apply {
               setRemoteAdapter(R.id.widget_list_view, serviceIntent)
               setEmptyView(R.id.widget_list_view, android.R.id.empty)
               setPendingIntentTemplate(R.id.widget_list_view, templateIntent)
+              setViewVisibility(
+                  R.id.widget_reauth_banner,
+                  if (needsReauth(prefs)) View.VISIBLE else View.GONE
+              )
+              setOnClickPendingIntent(R.id.widget_reauth_banner, openApp)
           }.also { appWidgetManager.updateAppWidget(appWidgetId, it) }
 
           appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.widget_list_view)

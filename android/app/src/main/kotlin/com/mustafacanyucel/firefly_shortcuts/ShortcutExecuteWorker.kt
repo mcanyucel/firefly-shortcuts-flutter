@@ -36,7 +36,10 @@ import android.content.Context
           // the triggering intent.
           val shortcut = findShortcut(prefs.getString("shortcuts", "[]") ?: "[]", shortcutId)
 
-          if (serverUrl.isEmpty() || token.isEmpty() || shortcut == null) {
+          // Covers a missing or expired token, and a 401 seen earlier: the
+          // request would fail, and only the app can get a new token.
+          if (serverUrl.isEmpty() || shortcut == null ||
+              ShortcutWidgetProvider.needsReauth(prefs)) {
               setState(shortcutId, "error")
               scheduleReset(shortcutId)
               return@withContext Result.failure()
@@ -55,6 +58,7 @@ import android.content.Context
               ).execute()
 
               val success = response.isSuccessful
+              if (response.code == 401) markNeedsReauth()
               setState(shortcutId, if (success) "success" else "error")
               scheduleReset(shortcutId)
               if (success) Result.success() else Result.failure()
@@ -93,6 +97,12 @@ import android.content.Context
               s.optJSONArray("tags")?.takeIf { it.length() > 0 }?.let { put("tags", it) }
           }
           return JSONObject().put("transactions", JSONArray().put(item)).toString()
+      }
+
+      // Cleared when the app pushes a new token.
+      private fun markNeedsReauth() {
+          context.getSharedPreferences(ShortcutWidgetProvider.PREFS_NAME, Context.MODE_PRIVATE)
+              .edit().putBoolean(ShortcutWidgetProvider.KEY_NEEDS_REAUTH, true).apply()
       }
 
       private fun setState(shortcutId: Int, state: String) {
