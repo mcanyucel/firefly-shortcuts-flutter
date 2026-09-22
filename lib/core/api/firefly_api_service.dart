@@ -39,9 +39,12 @@ class FireflyApiService {
     await _dio.post('$base/api/v1/transactions', data: request.toJson());
   }
 
-  Future<void> testConnection() async {
+  /// ID of the user the current token belongs to.
+  Future<String> getCurrentUserId() async {
     final base = await _settings.getServerUrl() ?? '';
-    await _dio.get('$base/api/v1/about');
+    final response = await _dio.get('$base/api/v1/about/user');
+    final data = (response.data as Map<String, dynamic>)['data'];
+    return (data as Map<String, dynamic>)['id'].toString();
   }
 
   Future<List<T>> _fetchAllPages<T>(

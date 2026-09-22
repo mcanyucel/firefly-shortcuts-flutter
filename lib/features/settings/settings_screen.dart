@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/auth/auth_notifier.dart';
 import '../../core/auth/auth_state.dart';
+import '../../core/providers/dao_providers.dart';
+import '../../core/settings/settings_repository.dart';
 import 'settings_notifier.dart';
 import 'settings_state.dart';
 
@@ -69,17 +71,71 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     }
   }
 
+  // Shortcuts hold Firefly IDs from the server they were created on, and
+  // connecting elsewhere wipes them. Ask while the user can still back out.
+  // A different account on the same server is only known after login.
+  Future<bool> _confirmServerSwitch() async {
+    final newUrl = SettingsRepository.normalizeServerUrl(
+      _serverUrlController.text.trim(),
+    );
+    final ownerUrl = await ref.read(authProvider.notifier).dataOwnerServerUrl();
+    if (ownerUrl == null || ownerUrl == newUrl) return true;
+    final count = await ref.read(shortcutDaoProvider).count();
+    if (count == 0) return true;
+    if (!mounted) return false;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Switch server?'),
+        content: Text(
+          'Your $count shortcut${count == 1 ? '' : 's'} belong to $ownerUrl. '
+          'Connecting to $newUrl deletes them, along with the synced '
+          'accounts, categories and tags.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: TextButton.styleFrom(
+              foregroundColor: Theme.of(ctx).colorScheme.error,
+            ),
+            child: const Text('Delete and connect'),
+          ),
+        ],
+      ),
+    );
+    return confirmed == true;
+  }
+
   Future<void> _connect() async {
+    // Captured up front: a successful login navigates away from this screen.
+    final messenger = ScaffoldMessenger.of(context);
+    if (!await _confirmServerSwitch()) return;
     setState(() => _isConnecting = true);
     try {
       await _save();
       final pat = _patController.text.replaceAll(RegExp(r'\s+'), '');
+      final LoginResult result;
       if (pat.isNotEmpty) {
-        await ref.read(authProvider.notifier).loginWithPat(pat);
+        result = await ref.read(authProvider.notifier).loginWithPat(pat);
         if (mounted) context.go('/home');
       } else {
-        final success = await ref.read(authProvider.notifier).login();
-        if (!success && mounted) {
+        result = await ref.read(authProvider.notifier).login();
+      }
+      if (result == LoginResult.connectedDataCleared) {
+        messenger.showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Shortcuts from the previous Firefly account were removed',
+            ),
+          ),
+        );
+      } else if (result == LoginResult.failed) {
+        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('OAuth login failed or was cancelled'),

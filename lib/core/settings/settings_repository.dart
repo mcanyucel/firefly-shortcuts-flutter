@@ -16,10 +16,11 @@
     Future<String?> getPersonalAccessToken() =>
         _storage.read(key: _keyPersonalAccessToken);
 
-    Future<void> saveServerUrl(String url) {
-      final trimmed = url.endsWith('/') ? url.substring(0, url.length - 1) : url;
-      return _storage.write(key: _keyServerUrl, value: trimmed);
-    }
+    static String normalizeServerUrl(String url) =>
+        url.endsWith('/') ? url.substring(0, url.length - 1) : url;
+
+    Future<void> saveServerUrl(String url) =>
+        _storage.write(key: _keyServerUrl, value: normalizeServerUrl(url));
 
     Future<void> saveClientId(String id) =>
         _storage.write(key: _keyClientId, value: id);

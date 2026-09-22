@@ -51,6 +51,8 @@ class ShortcutDao extends DatabaseAccessor<AppDatabase>
     });
   }
 
+  Future<int> count() => shortcuts.count().getSingle();
+
   Future<ShortcutWithTags?> getByIdWithTags(int id) async {
     final shortcut = await (select(
       shortcuts,

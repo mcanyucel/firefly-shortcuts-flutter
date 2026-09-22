@@ -13,7 +13,7 @@
 
   @Riverpod(keepAlive: true)
   class SyncNotifier extends _$SyncNotifier {
-    static const _keyLastSync = 'last_sync_time';
+    static const keyLastSync = 'last_sync_time';
 
     @override
     SyncState build() {
@@ -24,7 +24,7 @@
     Future<void> _restoreLastSyncTime() async {
       final stored = await ref
           .read(secureStorageProvider)
-          .read(key: _keyLastSync);
+          .read(key: keyLastSync);
       if (stored != null) {
         state = state.copyWith(lastSyncTime: DateTime.tryParse(stored));
       }
@@ -101,7 +101,7 @@
       final now = DateTime.now();
       await ref
           .read(secureStorageProvider)
-          .write(key: _keyLastSync, value: now.toIso8601String());
+          .write(key: keyLastSync, value: now.toIso8601String());
 
       await WidgetUpdateService.update(
         shortcutDao: ref.read(shortcutDaoProvider),

@@ -1,9 +1,12 @@
+import 'dart:async';
 import 'package:flutter_appauth/flutter_appauth.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../api/dio_client.dart';
 import '../api/firefly_api_service.dart';
 import '../auth/auth_manager.dart';
+import '../auth/data_owner_guard.dart';
 import '../database/app_database.dart';
 import '../settings/settings_repository.dart';
 
@@ -38,7 +41,22 @@ FireflyApiService fireflyApiService(Ref ref) =>
       settingsRepository: ref.watch(settingsRepositoryProvider),
     );
 
+final dataOwnerGuardProvider = Provider<DataOwnerGuard>(
+  (ref) => DataOwnerGuard(
+    ref.watch(fireflyApiServiceProvider),
+    ref.watch(settingsRepositoryProvider),
+    ref.watch(appDatabaseProvider),
+    ref.watch(secureStorageProvider),
+  ),
+);
+
 @riverpod
 Future<void> appInit(Ref ref) async {
-  await ref.read(authManagerProvider).initialize();
+  final authManager = ref.read(authManagerProvider);
+  await authManager.initialize();
+  unawaited(
+    ref.read(dataOwnerGuardProvider).adoptLegacyOwner(
+      authenticated: authManager.state.isAuthenticated,
+    ),
+  );
 }

@@ -24,6 +24,13 @@ class AppDatabase extends _$AppDatabase {
 
   @override
   int get schemaVersion => 1;
+
+  /// Deletes every row. Children first, as foreign keys are not enforced.
+  Future<void> wipe() => transaction(() async {
+    for (final table in allTables.toList().reversed) {
+      await delete(table).go();
+    }
+  });
 }
 
 LazyDatabase _openConnection() {
