@@ -1,5 +1,15 @@
 # Firefly Shortcuts
 
+> [!IMPORTANT]
+> **This is the archived Flutter version (up to 1.0.3). The app has moved.**
+>
+> Firefly Shortcuts was rewritten as a native Kotlin app, released as 2.0.0. It now lives at **[mcanyucel/firefly-shortcuts](https://github.com/mcanyucel/firefly-shortcuts)**. Get new releases there.
+>
+> - **Obtainium users:** no change needed. The app's URL is the same, and 2.0.0 installs as a normal update over 1.0.3.
+> - **Your data doesn't carry over:** after updating, connect to your server again, sync, and create your shortcuts again. See [Updating from 1.0.x](https://github.com/mcanyucel/firefly-shortcuts#updating-from-10x).
+>
+> This repository is read-only and gets no more updates.
+
 ![App Icon](./assets/icon/foreground.png)
 
 A Flutter Android app for executing preconfigured [Firefly III](https://firefly-iii.org/) transactions directly from your home screen using app shortcuts and widgets.
